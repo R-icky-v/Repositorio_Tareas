@@ -7,7 +7,9 @@ from database.tarea_queries import (
     actualizar_tarea,
     cambiar_estado_tarea,
     eliminar_tarea,
-    obtener_tareas_docente
+    obtener_tareas_docente,
+    obtener_detalle_tarea 
+    
 )
 from database.conexion import get_conexion
 
@@ -67,7 +69,11 @@ cambiar_estado_tarea(id_tarea, 'publicada')
 print('\n-- Consultando tareas del docente --')
 obtener_tareas_docente(id_docente)
 
+print('\n-- Obteniendo detalle de tarea --')
+obtener_detalle_tarea(id_tarea)
+
 print('\n-- Eliminando tarea --')
 eliminar_tarea(id_tarea)
+
 
 print('\n=== T-09.7 COMPLETADO ===')
