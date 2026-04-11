@@ -61,3 +61,36 @@ def crear_tablas():
 
 if __name__ == "__main__":
     crear_tablas()
+
+def crear_tabla_entregas():
+    conn = get_conexion()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS entregas (
+                id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+                id_tarea UUID REFERENCES tareas(id),
+                id_estudiante UUID REFERENCES usuarios(id),
+                ruta_archivo TEXT NOT NULL,
+                nombre_archivo TEXT NOT NULL,
+                fecha_entrega TIMESTAMP DEFAULT NOW(),
+                estado TEXT DEFAULT 'entregado'
+                    CHECK (estado IN ('entregado', 'anulado')),
+                created_at TIMESTAMP DEFAULT NOW()
+            );
+        ''')
+        conn.commit()
+        print('Tabla entregas creada correctamente')
+
+    except Exception as e:
+        conn.rollback()
+        print('Error al crear tabla entregas: ' + str(e))
+
+    finally:
+        cursor.close()
+        conn.close()
+
+if __name__ == '__main__':
+    crear_tablas()
+    crear_tabla_entregas()

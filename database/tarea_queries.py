@@ -125,3 +125,64 @@ def obtener_detalle_tarea(id_tarea):
     finally:
         cursor.close()
         conn.close()
+
+def insertar_entrega(id_tarea, id_estudiante, ruta_archivo, nombre_archivo):
+    try:
+        conn = get_conexion()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO entregas (id_tarea, id_estudiante, ruta_archivo, nombre_archivo)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id, fecha_entrega
+        ''', (id_tarea, id_estudiante, ruta_archivo, nombre_archivo))
+        resultado = cursor.fetchone()
+        conn.commit()
+        print('Entrega registrada con ID: ' + str(resultado[0]))
+        print('Fecha de entrega: ' + str(resultado[1]))
+        return resultado[0]
+    except Exception as e:
+        print('Error al insertar entrega: ' + str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def obtener_entregas_por_tarea(id_tarea):
+    try:
+        conn = get_conexion()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT e.id, e.ruta_archivo, e.nombre_archivo,
+                   e.fecha_entrega, e.estado,
+                   u.nombre, u.apellido
+            FROM entregas e
+            JOIN usuarios u ON e.id_estudiante = u.id
+            WHERE e.id_tarea = %s
+            ORDER BY e.fecha_entrega DESC
+        ''', (id_tarea,))
+        entregas = cursor.fetchall()
+        print('Se encontraron ' + str(len(entregas)) + ' entregas')
+        return entregas
+    except Exception as e:
+        print('Error al obtener entregas: ' + str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def anular_entrega(id_entrega):
+    try:
+        conn = get_conexion()
+        cursor = conn.cursor()
+        cursor.execute('''
+            UPDATE entregas
+            SET estado = 'anulado'
+            WHERE id = %s
+        ''', (id_entrega,))
+        conn.commit()
+        print('Entrega anulada correctamente')
+    except Exception as e:
+        print('Error al anular entrega: ' + str(e))
+    finally:
+        cursor.close()
+        conn.close()
