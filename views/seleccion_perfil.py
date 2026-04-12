@@ -3,6 +3,8 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import tkinter as tk
 from database.sesion import iniciar_sesion
+from views.crear_tarea_view import CrearTareaView
+from views.ver_tareas_view import VerTareasView # <--- Importar
 
 def abrir_seleccion_perfil():
     ventana = tk.Tk()
@@ -73,7 +75,7 @@ def abrir_seleccion_perfil():
 def abrir_menu_docente(perfil):
     ventana = tk.Tk()
     ventana.title('Docente — ' + perfil['nombre'] + ' ' + perfil['apellido'])
-    ventana.geometry('400x300')
+    ventana.geometry('400x450') 
     ventana.configure(bg='#f0f0f0')
 
     tk.Label(
@@ -81,24 +83,43 @@ def abrir_menu_docente(perfil):
         text='Bienvenido, ' + perfil['nombre'],
         font=('Arial', 16, 'bold'),
         bg='#f0f0f0'
-    ).pack(pady=30)
-
-    tk.Label(
-        ventana,
-        text='Perfil: Docente',
-        font=('Arial', 11),
-        bg='#f0f0f0',
-        fg='#4a90d9'
-    ).pack()
-
-    # Aquí tus compañeros agregarán los botones del menú docente
-    tk.Label(
-        ventana,
-        text='(Aqui iran las opciones del docente)',
-        font=('Arial', 10),
-        bg='#f0f0f0',
-        fg='#999999'
     ).pack(pady=20)
+
+    # --- 1. FUNCIÓN PARA CREAR TAREA (Ya la tenías) ---
+    def ir_a_crear_tarea():
+        id_curso_prueba = "c3808b8b-dab9-47f1-9809-dcd2848849d4" 
+        CrearTareaView(ventana, id_curso_prueba, perfil['id'])
+
+    # --- 2. NUEVA FUNCIÓN PARA VER TAREAS ---
+    def ir_a_ver_tareas():
+        # Llamamos a la vista que creamos pasándole el ID del docente logueado
+        VerTareasView(ventana, perfil['id'])
+
+    # --- BOTÓN 1: CREAR ---
+    tk.Button(
+        ventana,
+        text='➕ Crear Nueva Tarea',
+        font=('Arial', 12, 'bold'),
+        bg='#4a90d9',
+        fg='white',
+        width=20,
+        height=2,
+        cursor='hand2',
+        command=ir_a_crear_tarea
+    ).pack(pady=10)
+
+    # --- BOTÓN 2: VER (Aquí conectamos la nueva función) ---
+    tk.Button(
+        ventana,
+        text='📋 Ver mis Tareas',
+        font=('Arial', 12),
+        bg='white',
+        fg='#333333',
+        width=20,
+        height=2,
+        cursor='hand2',
+        command=ir_a_ver_tareas  # <-- Ahora este botón ya hace algo
+    ).pack(pady=10)
 
     ventana.mainloop()
 

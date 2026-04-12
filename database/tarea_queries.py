@@ -86,15 +86,18 @@ def obtener_tareas_docente(id_docente):
             SELECT t.id, t.titulo, t.descripcion,
                    t.fecha_limite, t.estado, c.nombre
             FROM tareas t
-            JOIN cursos c ON t.id_curso = c.id
+            -- CAMBIO AQUÍ: Usamos LEFT JOIN para no perder tareas sin curso válido
+            LEFT JOIN cursos c ON t.id_curso = c.id
             WHERE t.id_docente = %s
             ORDER BY t.created_at DESC
         ''', (id_docente,))
+        
         tareas = cursor.fetchall()
         print('Se encontraron ' + str(len(tareas)) + ' tareas')
         return tareas
     except Exception as e:
         print('Error al consultar: ' + str(e))
+        return [] # Retornamos lista vacía en lugar de None para evitar errores en la UI
     finally:
         cursor.close()
         conn.close()
