@@ -111,20 +111,17 @@ def obtener_detalle_tarea(id_tarea):
             SELECT t.id, t.titulo, t.descripcion,
                    t.fecha_limite, t.estado,
                    c.nombre AS curso,
-                   u.nombre AS docente
+                   u.nombre || ' ' || u.apellido AS docente -- Concatenamos nombre y apellido
             FROM tareas t
-            JOIN cursos c ON t.id_curso = c.id
-            JOIN usuarios u ON t.id_docente = u.id
+            LEFT JOIN cursos c ON t.id_curso = c.id      -- LEFT JOIN para seguridad
+            LEFT JOIN usuarios u ON t.id_docente = u.id   -- LEFT JOIN para seguridad
             WHERE t.id = %s
         ''', (id_tarea,))
         tarea = cursor.fetchone()
-        if tarea:
-            print('Tarea encontrada: ' + str(tarea))
-        else:
-            print('No se encontro la tarea')
         return tarea
     except Exception as e:
         print('Error al obtener detalle: ' + str(e))
+        return None
     finally:
         cursor.close()
         conn.close()
