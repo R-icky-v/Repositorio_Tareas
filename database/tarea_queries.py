@@ -5,6 +5,41 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database.conexion import get_conexion
 #from database.tarea_queries import registrar_entrega
 
+def inicializar_infraestructura_calificaciones():
+    """Crea la tabla de calificaciones asegurando compatibilidad con UUID."""
+    conn = None
+    try:
+        conn = get_conexion()
+        cursor = conn.cursor()
+        
+        # 1. Crear la tabla con id_entrega tipo UUID para que sea compatible
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS calificaciones (
+                id SERIAL PRIMARY KEY,
+                id_entrega UUID NOT NULL UNIQUE, 
+                calificacion DECIMAL(5,2) NOT NULL,
+                comentario TEXT,
+                estado VARCHAR(20) DEFAULT 'publicada',
+                fecha_calificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT fk_entrega 
+                    FOREIGN KEY(id_entrega) 
+                    REFERENCES entregas(id) 
+                    ON DELETE CASCADE
+            );
+        ''')
+        conn.commit()
+        print("✅ Tabla 'calificaciones' verificada y lista para UUID.")
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"⚠️ Nota en infraestructura: {e}")
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
+# Asegúrate de que esta línea esté justo debajo de la función para que se ejecute al iniciar
+inicializar_infraestructura_calificaciones()
 
 def insertar_tarea(titulo, descripcion, fecha_limite, id_curso, id_docente):
     try:
@@ -127,49 +162,26 @@ def obtener_detalle_tarea(id_tarea):
         cursor.close()
         conn.close()
 
-def insertar_entrega(id_tarea, id_estudiante, ruta_archivo, nombre_archivo):
-    try:
-        conn = get_conexion()
-        cursor = conn.cursor()
-        cursor.execute('''
-            INSERT INTO entregas (id_tarea, id_estudiante, ruta_archivo, nombre_archivo)
-            VALUES (%s, %s, %s, %s)
-            RETURNING id, fecha_entrega
-        ''', (id_tarea, id_estudiante, ruta_archivo, nombre_archivo))
-        resultado = cursor.fetchone()
-        conn.commit()
-        print('Entrega registrada con ID: ' + str(resultado[0]))
-        print('Fecha de entrega: ' + str(resultado[1]))
-        return resultado[0]
-    except Exception as e:
-        print('Error al insertar entrega: ' + str(e))
-    finally:
-        cursor.close()
-        conn.close()
 
 
 def obtener_entregas_por_tarea(id_tarea):
     try:
         conn = get_conexion()
         cursor = conn.cursor()
+        # Forzamos los 7 campos en este orden exacto
         cursor.execute('''
-            SELECT e.id, e.ruta_archivo, e.nombre_archivo,
-                   e.fecha_entrega, e.estado,
-                   u.nombre, u.apellido
+            SELECT e.id, u.nombre, e.fecha_entrega, e.nombre_archivo, 
+                   c.calificacion, c.estado, e.ruta_archivo
             FROM entregas e
             JOIN usuarios u ON e.id_estudiante = u.id
+            LEFT JOIN calificaciones c ON c.id_entrega = e.id
             WHERE e.id_tarea = %s
             ORDER BY e.fecha_entrega DESC
         ''', (id_tarea,))
-        entregas = cursor.fetchall()
-        print('Se encontraron ' + str(len(entregas)) + ' entregas')
-        return entregas
-    except Exception as e:
-        print('Error al obtener entregas: ' + str(e))
+        return cursor.fetchall()
     finally:
         cursor.close()
         conn.close()
-
 
 def anular_entrega(id_entrega):
     try:
@@ -218,27 +230,33 @@ def obtener_tareas_estudiante(id_estudiante):
         conn.close()
 
 def registrar_entrega(id_tarea, id_estudiante, nombre_archivo, ruta_archivo):
-    """Registra la entrega en la base de datos (T-01.5 y T-01.7)."""
+    conn = None
     try:
         conn = get_conexion()
         cursor = conn.cursor()
+        
+        # Si esto falla (por permisos de carpeta), se queda cargando
+        ruta_absoluta = os.path.abspath(ruta_archivo)
         
         query = """
             INSERT INTO entregas (id_tarea, id_estudiante, nombre_archivo, ruta_archivo, estado)
             VALUES (%s, %s, %s, %s, 'entregado')
             RETURNING id;
         """
-        cursor.execute(query, (id_tarea, id_estudiante, nombre_archivo, ruta_archivo))
+        cursor.execute(query, (id_tarea, id_estudiante, nombre_archivo, ruta_absoluta))
         id_entrega = cursor.fetchone()[0]
         
-        conn.commit()
+        conn.commit() # Si el commit no se ejecuta, la UI se congela
         return id_entrega
     except Exception as e:
-        print(f"❌ Error al registrar entrega: {e}")
+        if conn:
+            conn.rollback() # Crucial para liberar la tabla
+        print(f"❌ Error real en BD: {e}")
         return None
     finally:
-        cursor.close()
-        conn.close()
+        if conn:
+            cursor.close()
+            conn.close()
 
 def obtener_entrega_estudiante(id_tarea, id_estudiante):
     """Obtiene los datos de una entrega específica (T-02.2)."""
@@ -285,3 +303,30 @@ def eliminar_entrega_db(id_entrega):
     finally:
         cursor.close()
         conn.close()
+
+
+def guardar_calificacion_db(id_entrega, nota, comentario, estado='publicada'):
+    """Registra o actualiza la nota y feedback (T-10.6)."""
+    try:
+        conn = get_conexion()
+        cursor = conn.cursor()
+        # Usamos un ON CONFLICT si tu BD lo soporta, o una lógica de Update/Insert
+        cursor.execute('''
+            INSERT INTO calificaciones (id_entrega, calificacion, comentario, estado, fecha_calificacion)
+            VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
+            ON CONFLICT (id_entrega) 
+            DO UPDATE SET 
+                calificacion = EXCLUDED.calificacion,
+                comentario = EXCLUDED.comentario,
+                estado = EXCLUDED.estado,
+                fecha_calificacion = CURRENT_TIMESTAMP
+        ''', (id_entrega, nota, comentario, estado))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Error al calificar: {e}")
+        return False
+    finally:
+        cursor.close()
+        conn.close()
+

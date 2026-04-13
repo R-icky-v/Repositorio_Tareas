@@ -74,33 +74,44 @@ class SubirTareaView(tk.Toplevel):
             self.btn_enviar.config(state='normal')
 
     def procesar_entrega(self):
-        # T-01.2: Validar fecha límite antes de permitir envío
+        # 1. Validar fecha
         ahora = datetime.now()
         limite = datetime.strptime(str(self.fecha_limite_str)[:16], '%Y-%m-%d %H:%M')
 
         if ahora > limite:
-            messagebox.showerror("Plazo Vencido", "Lo sentimos, la fecha límite de entrega ha pasado.")
-            self.btn_enviar.config(state='disabled')
+            messagebox.showerror("Plazo Vencido", "La fecha límite ha pasado.")
             return
 
-        # Simular carga (T-01.1)
+        # 2. Animación de progreso (AHORA ESTÁ AISLADA)
         self.progreso['value'] = 0
         for i in range(1, 101, 20):
             self.update_idletasks()
             self.progreso['value'] = i
             self.after(100)
 
-        # Guardar archivo "localmente" (Simulación de Storage)
-        nombre_original = os.path.basename(self.archivo_seleccionado)
-        os.makedirs("uploads", exist_ok=True)
-        ruta_destino = os.path.join("uploads", f"{self.id_estudiante}_{nombre_original}")
-        shutil.copy(self.archivo_seleccionado, ruta_destino)
+        # 3. Guardado físico (FUERA DEL BUCLE)
+        try:
+            nombre_original = os.path.basename(self.archivo_seleccionado)
+            os.makedirs("uploads", exist_ok=True)
+            # Usamos timestamp para que el nombre sea único y no choque
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            nombre_final = f"{self.id_estudiante}_{timestamp}_{nombre_original}"
+            ruta_destino = os.path.join("uploads", nombre_final)
+            
+            shutil.copy(self.archivo_seleccionado, ruta_destino)
+            
+            # 4. Registro en BD (UNA SOLA VEZ)
+            exito = registrar_entrega(
+                self.id_tarea, 
+                self.id_estudiante, 
+                nombre_final, 
+                ruta_destino
+            )
 
-        # Registrar en BD (T-01.5 y T-01.7)
-        exito = registrar_entrega(self.id_tarea, self.id_estudiante, nombre_original, ruta_destino)
-
-        if exito:
-            messagebox.showinfo("¡Éxito!", "Tarea entregada correctamente (T-01.2)")
-            self.destroy()
-        else:
-            messagebox.showerror("Error", "No se pudo registrar la entrega en el servidor.")
+            if exito:
+                messagebox.showinfo("¡Éxito!", "Tarea entregada correctamente.")
+                self.destroy()
+            else:
+                messagebox.showerror("Error", "No se pudo registrar en la base de datos.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al procesar archivo: {e}")
