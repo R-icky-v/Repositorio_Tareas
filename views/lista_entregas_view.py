@@ -67,26 +67,40 @@ class ListaEntregasView(tk.Toplevel):
         self.btn_calificar.pack(side="left", padx=10)
 
     def cargar_datos(self):
-        # Limpiar tabla
+        # 1. Limpiar tabla
         for item in self.tabla.get_children():
             self.tabla.delete(item)
         
-        # Obtener entregas
-        self.entregas_raw = obtener_entregas_por_tarea(self.id_tarea)
+        # 2. OBTENER ENTREGAS (Cambiado a entregas_actuales)
+        self.entregas_actuales = obtener_entregas_por_tarea(self.id_tarea)
         
-        for entrega in self.entregas_raw:
-            # Insertamos en la tabla solo lo visible
-            # Pero guardamos el ID como iid para buscar la ruta después
-            self.tabla.insert('', 'end', iid=entrega[0], values=(entrega[1], entrega[2], entrega[3], entrega[4]))
+        if self.entregas_actuales:
+            for entrega in self.entregas_actuales:
+                # Insertamos usando el ID de la base de datos (entrega[0]) como iid
+                self.tabla.insert('', 'end', iid=entrega[0], values=(
+                    entrega[1], # Estudiante
+                    entrega[2], # Fecha
+                    entrega[3], # Archivo
+                    f"{entrega[4] if entrega[4] else 'Sin nota'}" # Estado/Nota
+                ))
 
     def abrir_calificador(self):
         sel = self.tabla.selection()
         if not sel: return messagebox.showwarning("Atención", "Seleccione una entrega")
         
-        # Pasamos los datos necesarios al panel de calificación (US-10)
-        datos = self.tabla.item(sel)['values']
+        # --- LA SOLUCIÓN ESTÁ AQUÍ ---
+        # 1. Recuperamos el ID real que guardamos de forma invisible en el 'iid'
+        id_entrega_real = str(sel[0]) 
+        
+        # 2. Recuperamos los valores visibles de la tabla
+        valores_visibles = self.tabla.item(sel)['values']
+        nombre_estudiante = valores_visibles[0] # Ahora sabemos que el índice 0 es el nombre
+        
+        # 3. Armamos un paquete con exactamente lo que CalificarEntregaView espera recibir: [ID, Nombre]
+        datos_correctos = [id_entrega_real, nombre_estudiante]
+        
         from views.calificar_entrega_view import CalificarEntregaView
-        CalificarEntregaView(self, datos, self.cargar_datos) # Pasamos callback para refrescar
+        CalificarEntregaView(self, datos_correctos, self.cargar_datos) # Pasamos callback para refrescar
     
     def ver_archivo_estudiante(self):
         seleccion = self.tabla.selection()
@@ -94,23 +108,15 @@ class ListaEntregasView(tk.Toplevel):
             messagebox.showwarning("Atención", "Seleccione una entrega.")
             return
 
-        # EL PROBLEMA ESTABA AQUÍ:
-        # Estás usando valores_fila[0], pero en tu tabla la columna 0 es "Estudiante"
-        # El ID real de la entrega lo guardamos internamente en el 'iid'
-        id_entrega_sel = self.tabla.item(seleccion)['iid'] 
+        # SOLUCIÓN AL KEYERROR: En Tkinter, el iid es la selección misma
+        id_entrega_sel = str(seleccion[0]) 
 
-        print(f"DEBUG CORRECTO: Buscando ID real {id_entrega_sel}")
-        
         ruta_archivo = None
-        for entrega in self.entregas_actuales:
-            if str(entrega[0]) == str(id_entrega_sel):
-                ruta_archivo = entrega[6]
-                break
         
-        # Buscamos la ruta en la lista que SI tiene datos
+        # Buscamos la ruta en la lista que SI llenamos (entregas_actuales)
         for entrega in self.entregas_actuales:
             if str(entrega[0]) == id_entrega_sel:
-                ruta_archivo = entrega[6] # El índice 6 es ruta_archivo según tu query
+                ruta_archivo = entrega[6] # El índice 6 es ruta_archivo en tu DB
                 break
 
         if ruta_archivo and str(ruta_archivo).lower() != 'none':
@@ -121,9 +127,6 @@ class ListaEntregasView(tk.Toplevel):
                 else:
                     subprocess.call(['open', ruta_limpia])
             else:
-                messagebox.showerror("Error", f"El archivo no existe en la ruta:\n{ruta_limpia}")
+                messagebox.showerror("Error", f"Archivo no encontrado físicamente en:\n{ruta_limpia}")
         else:
-            messagebox.showerror("Error", "La ruta en la base de datos está vacía (None).")
-        # ... (tu código actual)
-        print(f"DEBUG: Buscando ID {id_entrega_sel}") 
-        print(f"DEBUG: Contenido de entregas_actuales: {self.entregas_actuales}")
+            messagebox.showerror("Error", "No se encontró la ruta del archivo (está vacía en la BD).")

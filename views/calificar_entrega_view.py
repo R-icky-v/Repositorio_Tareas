@@ -51,17 +51,40 @@ class CalificarEntregaView(tk.Toplevel):
         nota_str = self.ent_nota.get()
         comentario = self.txt_comentario.get("1.0", "end-1c")
 
-        # Validaciones rápidas de IU (T-10.3)
+        # 1. Validación de Rango (T-10.3)
         try:
-            nota = float(nota_str)
-            if not (0 <= nota <= 100): raise ValueError()
+            # Quitamos espacios por si acaso
+            nota = float(nota_str.strip())
+            if not (0 <= nota <= 100): 
+                raise ValueError()
         except ValueError:
-            return messagebox.showerror("Error", "La nota debe ser de 0 a 100")
+            return messagebox.showerror("Error", "La nota debe ser un número entre 0 y 100")
 
-        # Llamada al Controlador (Capa de Negocio - T-10.4)
+        # 2. Llamada al Controlador
         from controllers.calificacion_controller import CalificacionController
-        if CalificacionController.procesar_calificacion(
+        
+        exito = CalificacionController.procesar_calificacion(
             self.id_entrega, nota, comentario, estado, self.nombre_estudiante
-        ):
-            self.callback_refresh()
+        )
+
+        if exito:
+            messagebox.showinfo("Éxito", f"Calificación {estado} guardada correctamente.")
+            
+            # 3. Refresco Automático: Llama a la función de la ventana anterior
+            if self.callback_refresh:
+                self.callback_refresh()
+            
+            # 4. Cierre Automático: La ventana se destruye tras guardar
             self.destroy()
+    
+    def confirmar_guardado(self, nota):
+        # ... lógica de guardado exitoso ...
+        
+        messagebox.showinfo("Éxito", "Calificación guardada correctamente.")
+        
+        # Refrescamos la tabla de la ventana anterior
+        if self.callback_refrescar:
+            self.callback_refrescar() 
+        
+        # Cerramos la ventana de calificación automáticamente
+        self.destroy()

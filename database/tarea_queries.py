@@ -310,7 +310,8 @@ def guardar_calificacion_db(id_entrega, nota, comentario, estado='publicada'):
     try:
         conn = get_conexion()
         cursor = conn.cursor()
-        # Usamos un ON CONFLICT si tu BD lo soporta, o una lógica de Update/Insert
+        
+        # Guardamos la nota respetando estrictamente la estructura original
         cursor.execute('''
             INSERT INTO calificaciones (id_entrega, calificacion, comentario, estado, fecha_calificacion)
             VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
@@ -321,6 +322,7 @@ def guardar_calificacion_db(id_entrega, nota, comentario, estado='publicada'):
                 estado = EXCLUDED.estado,
                 fecha_calificacion = CURRENT_TIMESTAMP
         ''', (id_entrega, nota, comentario, estado))
+
         conn.commit()
         return True
     except Exception as e:
@@ -330,3 +332,34 @@ def guardar_calificacion_db(id_entrega, nota, comentario, estado='publicada'):
         cursor.close()
         conn.close()
 
+def obtener_calificaciones_estudiante(id_estudiante):
+    """
+    Recupera notas publicadas, comentarios y títulos de tareas (T-05.3).
+    Excluye explícitamente el estado 'borrador'.
+    """
+    try:
+        conn = get_conexion()
+        cursor = conn.cursor()
+        # Mantenemos tu SELECT pero usamos 'id_curso' que es el nombre real en tu BD
+        # y le ponemos el alias 'curso_id' para que tu código de UI no cambie.
+        cursor.execute('''
+            SELECT 
+                t.titulo, 
+                c.calificacion, 
+                c.comentario, 
+                t.id_curso AS curso_id, 
+                c.fecha_calificacion
+            FROM calificaciones c
+            JOIN entregas e ON c.id_entrega = e.id
+            JOIN tareas t ON e.id_tarea = t.id
+            WHERE e.id_estudiante = %s AND c.estado = 'publicada'
+            ORDER BY c.fecha_calificacion DESC
+        ''', (id_estudiante,))
+        
+        return cursor.fetchall()
+    except Exception as e:
+        print(f"Error BD en US-05: {e}")
+        return []
+    finally:
+        cursor.close()
+        conn.close()

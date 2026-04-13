@@ -7,6 +7,7 @@ from database.sesion import iniciar_sesion
 from views.crear_tarea_view import CrearTareaView
 from views.ver_tareas_view import VerTareasView 
 from views.tareas_estudiante_view import TareasEstudianteView
+from views.ver_calificaciones_view import VerCalificacionesView
 
 def abrir_seleccion_perfil():
     ventana = tk.Tk()
@@ -143,7 +144,7 @@ def abrir_menu_docente(perfil):
 def abrir_menu_estudiante(perfil):
     ventana = tk.Tk()
     ventana.title('Estudiante — ' + perfil['nombre'] + ' ' + perfil['apellido'])
-    ventana.geometry('400x400')
+    ventana.geometry('400x450') # Aumentamos un poco el alto para el nuevo botón
     ventana.configure(bg='#f0f0f0')
 
     tk.Label(
@@ -153,9 +154,15 @@ def abrir_menu_estudiante(perfil):
         bg='#f0f0f0'
     ).pack(pady=30)
 
+    # --- LÓGICA DE NAVEGACIÓN ---
     def ejecutar_ver_tareas():
         TareasEstudianteView(ventana, perfil['id'])
 
+    def ejecutar_ver_calificaciones():
+        # Llamada a la vista de la US-05
+        VerCalificacionesView(ventana, perfil['id'])
+
+    # --- BOTÓN 1: TAREAS (US-03) ---
     tk.Button(
         ventana,
         text='📋 Ver Tareas Pendientes',
@@ -166,8 +173,22 @@ def abrir_menu_estudiante(perfil):
         width=25,
         pady=10,
         cursor='hand2'
-    ).pack(pady=20)
+    ).pack(pady=10)
 
+    # --- BOTÓN 2: CALIFICACIONES (US-05) ---
+    tk.Button(
+        ventana,
+        text='⭐ Mis Calificaciones',
+        font=('Arial', 11, 'bold'),
+        command=ejecutar_ver_calificaciones,
+        bg='#27ae60', # Color verde para diferenciarlo
+        fg='white',
+        width=25,
+        pady=10,
+        cursor='hand2'
+    ).pack(pady=10)
+
+    # Botón para salir
     tk.Button(
         ventana,
         text='Cerrar Sesión',
@@ -176,10 +197,9 @@ def abrir_menu_estudiante(perfil):
         bg='#e74c3c',
         fg='white',
         width=15
-    ).pack(pady=10)
+    ).pack(pady=25)
 
     ventana.mainloop()
-
 
 if __name__ == '__main__':
     abrir_seleccion_perfil()
