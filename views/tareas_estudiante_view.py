@@ -45,6 +45,11 @@ class TareasEstudianteView(tk.Toplevel):
         self.tabla.column('Tarea', width=200) # Más espacio para el título
         self.tabla.pack(fill="both", expand=True)
 
+        # --- AQUÍ VAN LOS COLORES (TAGS) ---
+        self.tabla.tag_configure('urgente', background='#ffcccc')    # Rojo claro
+        self.tabla.tag_configure('pendiente', background='#e1f5fe')   # Azul claro
+        self.tabla.tag_configure('completado', background='#c8e6c9')  # VERDE suave (Nuevo)
+
         # Configuración de colores (Tags)
         self.tabla.tag_configure('urgente', background='#ffcccc') # Rojo claro para < 24h
         self.tabla.tag_configure('pendiente', background='#e1f5fe') # Azul claro normal
@@ -63,7 +68,6 @@ class TareasEstudianteView(tk.Toplevel):
     def calcular_tiempo_restante(self, fecha_limite_str):
         """Calcula cuánto falta y retorna el texto y la urgencia."""
         try:
-            # Convertimos a string por si viene como objeto datetime y cortamos segundos
             limite_limpio = str(fecha_limite_str)[:16]
             fecha_limite = datetime.strptime(limite_limpio, '%Y-%m-%d %H:%M')
             ahora = datetime.now()
@@ -91,37 +95,46 @@ class TareasEstudianteView(tk.Toplevel):
         self.aplicar_filtro()
 
     def aplicar_filtro(self):
-        # Limpiar tabla
         for i in self.tabla.get_children():
             self.tabla.delete(i)
-            
+        
         busqueda = self.filtro_var.get().lower()
 
         for t in self.todas_las_tareas:
-            # t = (id, titulo, fecha, estado, curso)
-            id_db, titulo, fecha, estado, curso = t
-            
+        # Ahora recibimos 6 valores de la nueva consulta
+            id_db, titulo, fecha, estado, curso, tracking = t
+        
             if busqueda in curso.lower() or busqueda in titulo.lower():
                 tiempo_txt, urgente = self.calcular_tiempo_restante(fecha)
-                tag = 'urgente' if urgente else 'pendiente'
+            
+            # Lógica de colores priorizando la entrega
+                if tracking == 'entregado':
+                    tag = 'completado'
+                    tiempo_txt = "✅ Enviado"
+                    estado_mostrar = "ENTREGADO"
+                else:
+                    tag = 'urgente' if urgente else 'pendiente'
+                    estado_mostrar = estado.upper()
 
                 self.tabla.insert('', 'end', values=(
-                    id_db, curso, titulo, fecha, tiempo_txt, estado.upper()
+                    id_db, curso, titulo, fecha, tiempo_txt, estado_mostrar
                 ), tags=(tag,))
 
     def abrir_detalle(self):
+        """Aquí es donde ocurre la magia de conectar con el detalle."""
         seleccion = self.tabla.selection()
         if not seleccion:
             messagebox.showwarning("Atención", "Selecciona una tarea de la lista.")
             return
 
-        # Obtenemos el ID de la tarea (columna 0)
         id_tarea = self.tabla.item(seleccion)['values'][0]
         datos = obtener_detalle_tarea(id_tarea)
 
         if datos:
             from views.detalle_tarea_view import DetalleTareaView
-            # Abrimos la ventana de detalle pasando los datos obtenidos
-            DetalleTareaView(self, datos)
+            # EL CAMBIO ESTÁ AQUÍ ABAJO: 
+            # Agregamos self.id_estudiante al final para que la ventana de detalle 
+            # sepa quién es el usuario y muestre el botón de entregar.
+            DetalleTareaView(self, datos, self.id_estudiante) 
         else:
             messagebox.showerror("Error", "No se pudo cargar la información de la tarea.")

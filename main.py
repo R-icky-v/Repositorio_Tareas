@@ -17,3 +17,4 @@ if __name__ == '__main__':
     
     # 3. Iniciar App
     abrir_seleccion_perfil()
+    

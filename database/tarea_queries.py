@@ -3,6 +3,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database.conexion import get_conexion
+#from database.tarea_queries import registrar_entrega
 
 
 def insertar_tarea(titulo, descripcion, fecha_limite, id_curso, id_docente):
@@ -191,19 +192,96 @@ def obtener_tareas_estudiante(id_estudiante):
     try:
         conn = get_conexion()
         cursor = conn.cursor()
-        # Esta consulta busca tareas de los cursos donde el alumno está inscrito
+        # Modificamos la consulta para hacer un LEFT JOIN con entregas
+        # Si e.id no es nulo, significa que ya hay una entrega
         cursor.execute('''
-            SELECT t.id, t.titulo, t.fecha_limite, t.estado, c.nombre as curso
+            SELECT 
+                t.id, 
+                t.titulo, 
+                t.fecha_limite, 
+                COALESCE(e.estado, t.estado) as estado_actual, 
+                c.nombre as curso,
+                CASE WHEN e.id IS NOT NULL THEN 'entregado' ELSE 'pendiente' END as tracking
             FROM tareas t
             INNER JOIN cursos c ON t.id_curso = c.id
             INNER JOIN inscripciones i ON i.id_curso = c.id
+            LEFT JOIN entregas e ON e.id_tarea = t.id AND e.id_estudiante = %s
             WHERE i.id_estudiante = %s
             ORDER BY t.fecha_limite ASC
-        ''', (id_estudiante,))
+        ''', (id_estudiante, id_estudiante))
         return cursor.fetchall()
     except Exception as e:
-        print(f"Error en BD US-03: {e}")
+        print(f"Error en BD al obtener tareas con tracking: {e}")
         return []
+    finally:
+        cursor.close()
+        conn.close()
+
+def registrar_entrega(id_tarea, id_estudiante, nombre_archivo, ruta_archivo):
+    """Registra la entrega en la base de datos (T-01.5 y T-01.7)."""
+    try:
+        conn = get_conexion()
+        cursor = conn.cursor()
+        
+        query = """
+            INSERT INTO entregas (id_tarea, id_estudiante, nombre_archivo, ruta_archivo, estado)
+            VALUES (%s, %s, %s, %s, 'entregado')
+            RETURNING id;
+        """
+        cursor.execute(query, (id_tarea, id_estudiante, nombre_archivo, ruta_archivo))
+        id_entrega = cursor.fetchone()[0]
+        
+        conn.commit()
+        return id_entrega
+    except Exception as e:
+        print(f"❌ Error al registrar entrega: {e}")
+        return None
+    finally:
+        cursor.close()
+        conn.close()
+
+def obtener_entrega_estudiante(id_tarea, id_estudiante):
+    """Obtiene los datos de una entrega específica (T-02.2)."""
+    try:
+        conn = get_conexion()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT id, nombre_archivo, ruta_archivo, fecha_entrega 
+            FROM entregas 
+            WHERE id_tarea = %s AND id_estudiante = %s
+        ''', (id_tarea, id_estudiante))
+        return cursor.fetchone()
+    finally:
+        cursor.close()
+        conn.close()
+
+def actualizar_entrega_db(id_entrega, nombre_archivo, ruta_archivo):
+    """Reemplaza el archivo anterior por el nuevo (T-02.4)."""
+    try:
+        conn = get_conexion()
+        cursor = conn.cursor()
+        cursor.execute('''
+            UPDATE entregas 
+            SET nombre_archivo = %s, ruta_archivo = %s, fecha_entrega = CURRENT_TIMESTAMP
+            WHERE id = %s
+        ''', (nombre_archivo, ruta_archivo, id_entrega))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Error al actualizar entrega: {e}")
+        return False
+    finally:
+        cursor.close()
+        conn.close()
+
+def eliminar_entrega_db(id_entrega):
+    """Elimina el registro de la entrega (Anular entrega - T-02.1)."""
+    try:
+        conn = get_conexion()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM entregas WHERE id = %s', (id_entrega,))
+        conn.commit()
+        return True
     finally:
         cursor.close()
         conn.close()
