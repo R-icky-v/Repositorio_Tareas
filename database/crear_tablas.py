@@ -94,3 +94,71 @@ def crear_tabla_entregas():
 if __name__ == '__main__':
     crear_tablas()
     crear_tabla_entregas()
+
+def crear_tabla_inscripciones():
+    try:
+        conn = get_conexion()
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS inscripciones (
+                id_estudiante UUID REFERENCES usuarios(id),
+                id_curso UUID REFERENCES cursos(id),
+                fecha_inscripcion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id_estudiante, id_curso)
+            )
+        ''')
+        conn.commit()
+        print("✅ Tabla inscripciones lista.")
+    except Exception as e:
+        print(f"❌ Error en inscripciones: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
+from database.sesion import IDS  # Importamos los IDs de tu .env
+
+def inyectar_tarea_y_matricula():
+    try:
+        conn = get_conexion()
+        cursor = conn.cursor()
+
+        # 1. Usamos los IDs exactos de tu archivo .env
+        id_docente_env = IDS['docente']
+        id_estudiante_env = IDS['estudiante']
+        id_curso_env = IDS['curso']
+
+        # 2. Aseguramos que la tarea tenga asignado al DOCENTE del .env
+        # Usamos 'publicada' que es el estado que permite tu CHECK
+        cursor.execute('''
+            INSERT INTO tareas (titulo, descripcion, id_curso, id_docente, fecha_limite, estado)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            ON CONFLICT DO NOTHING
+        ''', (
+            '📝 Tarea para Docente y Estudiante', 
+            'Esta tarea debe ser visible para ambos.', 
+            id_curso_env, 
+            id_docente_env, # <--- AQUÍ se vincula al docente
+            '2026-12-31 23:59:00', 
+            'publicada'
+        ))
+
+        # 3. Matriculamos al estudiante del .env en ese mismo curso
+        cursor.execute('''
+            INSERT INTO inscripciones (id_estudiante, id_curso) 
+            VALUES (%s, %s) 
+            ON CONFLICT DO NOTHING
+        ''', (id_estudiante_env, id_curso_env))
+        
+        conn.commit()
+        print("--------------------------------------------------")
+        print(f"🚀 VÍNCULO EXITOSO")
+        print(f"Docente ID: {id_docente_env}")
+        print(f"Estudiante ID: {id_estudiante_env}")
+        print("--------------------------------------------------")
+
+    except Exception as e:
+        print(f"❌ Error al sincronizar: {e}")
+        conn.rollback()
+    finally:
+        cursor.close()
+        conn.close()

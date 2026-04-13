@@ -2,9 +2,11 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import tkinter as tk
+from tkinter import ttk
 from database.sesion import iniciar_sesion
 from views.crear_tarea_view import CrearTareaView
 from views.ver_tareas_view import VerTareasView # <--- Importar
+from views.tareas_estudiante_view import TareasEstudianteView
 
 def abrir_seleccion_perfil():
     ventana = tk.Tk()
@@ -127,7 +129,7 @@ def abrir_menu_docente(perfil):
 def abrir_menu_estudiante(perfil):
     ventana = tk.Tk()
     ventana.title('Estudiante — ' + perfil['nombre'] + ' ' + perfil['apellido'])
-    ventana.geometry('400x300')
+    ventana.geometry('400x400') # Aumenté un poco el alto para los botones
     ventana.configure(bg='#f0f0f0')
 
     tk.Label(
@@ -145,14 +147,36 @@ def abrir_menu_estudiante(perfil):
         fg='#27ae60'
     ).pack()
 
-    # Aquí tus compañeros agregarán los botones del menú estudiante
-    tk.Label(
+    # --- CONFIGURACIÓN DEL BOTÓN US-03 ---
+    
+    # Esta función interna sirve como puente para pasar los datos
+    def ejecutar_ver_tareas():
+        # Usamos perfil['id'] para que el sistema sepa qué tareas mostrar
+        # Si tu clave de ID tiene otro nombre (ej. 'id_usuario'), cámbialo aquí
+        TareasEstudianteView(ventana, perfil['id'])
+
+    tk.Button(
         ventana,
-        text='(Aqui iran las opciones del estudiante)',
-        font=('Arial', 10),
-        bg='#f0f0f0',
-        fg='#999999'
+        text='📋 Ver Tareas Pendientes',
+        font=('Arial', 11, 'bold'),
+        command=ejecutar_ver_tareas, # Conexión con la Vista/Controlador
+        bg='#3498db',
+        fg='white',
+        width=25,
+        pady=10,
+        cursor='hand2'
     ).pack(pady=20)
+
+    # Botón para salir
+    tk.Button(
+        ventana,
+        text='Cerrar Sesión',
+        font=('Arial', 10),
+        command=ventana.destroy,
+        bg='#e74c3c',
+        fg='white',
+        width=15
+    ).pack(pady=10)
 
     ventana.mainloop()
 

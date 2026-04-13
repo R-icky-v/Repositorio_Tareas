@@ -47,9 +47,13 @@ def iniciar_sesion(rol):
         
         if not usuario:
             print(f"⚠️ Usuario {rol} no encontrado. Creando perfil...")
-            nombre = "Pedro"
-            apellido = "Diaz"
-            email = f"{rol}.prueba@umss.edu"
+            # Personalizamos según el rol para no confundirlos
+            if rol == 'estudiante':
+                nombre, apellido = "Pedro", "Diaz"
+            else:
+                nombre, apellido = "Doctor", "Docente"
+                
+            email = f"{rol}.{id_usuario[:5]}@umss.edu" # Email único basado en ID
             
             cursor.execute('''
                 INSERT INTO usuarios (id, nombre, apellido, email, rol)

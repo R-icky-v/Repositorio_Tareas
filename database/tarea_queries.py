@@ -186,3 +186,24 @@ def anular_entrega(id_entrega):
     finally:
         cursor.close()
         conn.close()
+
+def obtener_tareas_estudiante(id_estudiante):
+    try:
+        conn = get_conexion()
+        cursor = conn.cursor()
+        # Esta consulta busca tareas de los cursos donde el alumno está inscrito
+        cursor.execute('''
+            SELECT t.id, t.titulo, t.fecha_limite, t.estado, c.nombre as curso
+            FROM tareas t
+            INNER JOIN cursos c ON t.id_curso = c.id
+            INNER JOIN inscripciones i ON i.id_curso = c.id
+            WHERE i.id_estudiante = %s
+            ORDER BY t.fecha_limite ASC
+        ''', (id_estudiante,))
+        return cursor.fetchall()
+    except Exception as e:
+        print(f"Error en BD US-03: {e}")
+        return []
+    finally:
+        cursor.close()
+        conn.close()
