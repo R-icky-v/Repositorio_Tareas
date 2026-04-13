@@ -8,7 +8,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # IMPORTACIONES
 from controllers.tarea_controller import TareaController
-# --- CAMBIO 1: Importamos tu nuevo componente (T-09.2) ---
 from views.components.file_picker import FilePicker 
 
 class CrearTareaView(tk.Toplevel):
@@ -21,12 +20,36 @@ class CrearTareaView(tk.Toplevel):
         self.id_docente = id_docente
         self.controlador = TareaController()
         
-        # --- CAMBIO 2: Ya no necesitamos self.ruta_archivo_seleccionado aquí ---
-        # porque el componente FilePicker se encargará de eso.
-
         self.crear_interfaz()
 
     def crear_interfaz(self):
+        # --- NUEVA BARRA DE NAVEGACIÓN ---
+        nav_frame = tk.Frame(self, bg='#f0f0f0')
+        nav_frame.pack(fill="x", padx=10, pady=5)
+
+        # Botón Atrás
+        tk.Button(nav_frame, text="⬅ Atrás", command=self.destroy, 
+                  bg='#bdc3c7', relief='flat', padx=10).pack(side="left")
+
+        # Botón Menú
+        def volver_a_perfiles():
+            # Si existe un padre (Panel), al destruirlo se destruye todo automáticamente
+            if self.master: 
+                self.master.destroy() 
+            else:
+                self.destroy() 
+                
+            from views.seleccion_perfil import abrir_seleccion_perfil
+            abrir_seleccion_perfil()
+
+        # AQUÍ ESTABA EL DUPLICADO (Corregido: solo una vez)
+        tk.Button(nav_frame, text="🏠 Menú Perfiles", command=volver_a_perfiles, 
+                  bg='#a1c4fd', relief='flat', padx=10).pack(side="right")
+
+        # --- SEPARADOR VISUAL ---
+        tk.Frame(self, height=1, bg='#cccccc').pack(fill="x", padx=10)
+
+        # --- CONTENIDO PRINCIPAL ---
         main_frame = ttk.Frame(self, padding="20")
         main_frame.pack(fill="both", expand=True)
 
@@ -46,8 +69,7 @@ class CrearTareaView(tk.Toplevel):
         self.ent_fecha.insert(0, "2026-06-30") 
         self.ent_fecha.pack(fill="x", pady=5)
 
-        # --- CAMBIO 3: Usamos el componente FilePicker (T-09.2) ---
-        # Reemplazamos todo el bloque anterior de file_frame y el botón
+        # --- Componente FilePicker ---
         self.picker_adjunto = FilePicker(main_frame, label_text="Material Adjunto:")
         self.picker_adjunto.pack(fill="x", pady=15)
 
@@ -63,24 +85,16 @@ class CrearTareaView(tk.Toplevel):
                                  command=lambda: self.enviar_datos(publicar=True))
         btn_publicar.pack(side="right", padx=5, expand=True, fill="x")
 
-    # --- CAMBIO 4: Borramos el método seleccionar_archivo() ---
-    # Ya no es necesario porque está dentro del componente FilePicker.
-
     def enviar_datos(self, publicar):
-        # 1. Recolectar datos de la GUI
         titulo = self.ent_titulo.get()
         descripcion = self.txt_desc.get("1.0", "end-1c")
         fecha = self.ent_fecha.get()
-        
-        # --- CAMBIO 5: Obtenemos el nombre del archivo desde el componente ---
         nombre_archivo = self.picker_adjunto.get_file_name()
 
-        # 2. Llamar al controlador
         exito, mensaje = self.controlador.guardar_nueva_tarea(
             titulo, descripcion, fecha, self.id_curso, self.id_docente, nombre_archivo, publicar_ahora=publicar
         )
 
-        # 3. Mostrar resultado al usuario
         if exito:
             messagebox.showinfo("Éxito", mensaje)
             self.destroy() 
@@ -91,7 +105,6 @@ if __name__ == "__main__":
     root = tk.Tk()
     root.withdraw()
     
-    # IDs de prueba
     ID_CURSO_VALIDO = "c3808b8b-dab9-47f1-9809-dcd2848849d4" 
     ID_DOCENTE_VALIDO = "5820f721-bb24-4605-9df0-c8cc6a8e54cb"
     

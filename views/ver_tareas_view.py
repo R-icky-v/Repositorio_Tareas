@@ -19,6 +19,28 @@ class VerTareasView(tk.Toplevel):
         self.cargar_datos()
 
     def crear_interfaz(self):
+        # --- NUEVA BARRA DE NAVEGACIÓN ---
+        nav_frame = tk.Frame(self, bg='#f0f0f0')
+        nav_frame.pack(fill="x", padx=10, pady=5)
+
+        # Botón Atrás
+        tk.Button(nav_frame, text="⬅ Atrás", command=self.destroy, 
+                  bg='#bdc3c7', relief='flat', padx=10).pack(side="left")
+
+        # Botón Menú (Cierre seguro)
+        def volver_a_perfiles():
+            if self.master: self.master.destroy() 
+            else: self.destroy()
+            from views.seleccion_perfil import abrir_seleccion_perfil
+            abrir_seleccion_perfil()
+
+        tk.Button(nav_frame, text="🏠 Menú Perfiles", command=volver_a_perfiles, 
+                  bg='#a1c4fd', relief='flat', padx=10).pack(side="right")
+
+        # --- SEPARADOR VISUAL ---
+        tk.Frame(self, height=1, bg='#cccccc').pack(fill="x", padx=10)
+
+        # --- CONTENIDO ORIGINAL ---
         main_frame = ttk.Frame(self, padding="20")
         main_frame.pack(fill="both", expand=True)
 
@@ -40,7 +62,6 @@ class VerTareasView(tk.Toplevel):
         self.tabla.column('Fecha Límite', width=120, anchor="center")
         
         self.tabla.pack(fill="both", expand=True)
-        
         self.tabla.bind("<Double-1>", self.abrir_entregas_estudiantes)
 
         # --- Panel de Botones ---
@@ -61,8 +82,10 @@ class VerTareasView(tk.Toplevel):
         self.btn_entregas.pack(side="left", padx=10)
 
         ttk.Button(btn_frame, text="🔍 Ver Detalle Tarea", command=self.abrir_detalle_seleccionado).pack(side="left")
+        
+        # El botón cerrar ahora solo destruye esta ventana (comportamiento de "Atrás")
         ttk.Button(btn_frame, text="Cerrar", command=self.destroy).pack(side="right")
-
+        
     def cargar_datos(self):
         """Carga la lista de tareas creadas por el docente."""
         # 1. Limpiar la tabla

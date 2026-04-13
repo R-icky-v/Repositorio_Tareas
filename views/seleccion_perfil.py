@@ -88,17 +88,17 @@ def abrir_menu_docente(perfil):
         bg='#f0f0f0'
     ).pack(pady=20)
 
+    # --- LÓGICA DE NAVEGACIÓN ---
+    def volver_al_inicio():
+        ventana.destroy()          # Cierra el menú docente
+        abrir_seleccion_perfil()   # Reabre la selección de perfil
+
     # --- ACCIONES DEL DOCENTE ---
     def ir_a_crear_tarea():
-        # ID de curso estático para pruebas
         id_curso_prueba = "c3808b8b-dab9-47f1-9809-dcd2848849d4" 
         CrearTareaView(ventana, id_curso_prueba, perfil['id'])
 
     def ir_a_ver_tareas():
-        """
-        Esta es la clave: VerTareasView debe contener el botón 
-        de 'Calificar' para cada tarea seleccionada.
-        """
         VerTareasView(ventana, perfil['id'])
 
     # --- BOTÓN 1: CREAR (US-09) ---
@@ -127,24 +127,23 @@ def abrir_menu_docente(perfil):
         command=ir_a_ver_tareas 
     ).pack(pady=10)
 
-    # Botón para salir
+    # Botón para volver (Cerrar Sesión)
     tk.Button(
         ventana,
-        text='Cerrar Sesión',
-        font=('Arial', 10),
-        command=ventana.destroy,
+        text='⬅ Cerrar Sesión',
+        font=('Arial', 10, 'bold'),
+        command=volver_al_inicio,   # Cambiado para que regrese al inicio
         bg='#e74c3c',
         fg='white',
-        width=15
+        width=18
     ).pack(pady=20)
 
     ventana.mainloop()
 
-
 def abrir_menu_estudiante(perfil):
     ventana = tk.Tk()
     ventana.title('Estudiante — ' + perfil['nombre'] + ' ' + perfil['apellido'])
-    ventana.geometry('400x450') # Aumentamos un poco el alto para el nuevo botón
+    ventana.geometry('400x450') 
     ventana.configure(bg='#f0f0f0')
 
     tk.Label(
@@ -155,11 +154,14 @@ def abrir_menu_estudiante(perfil):
     ).pack(pady=30)
 
     # --- LÓGICA DE NAVEGACIÓN ---
+    def volver_al_inicio():
+        ventana.destroy()          # Cierra el menú estudiante
+        abrir_seleccion_perfil()   # Reabre la selección de perfil
+
     def ejecutar_ver_tareas():
         TareasEstudianteView(ventana, perfil['id'])
 
     def ejecutar_ver_calificaciones():
-        # Llamada a la vista de la US-05
         VerCalificacionesView(ventana, perfil['id'])
 
     # --- BOTÓN 1: TAREAS (US-03) ---
@@ -181,22 +183,22 @@ def abrir_menu_estudiante(perfil):
         text='⭐ Mis Calificaciones',
         font=('Arial', 11, 'bold'),
         command=ejecutar_ver_calificaciones,
-        bg='#27ae60', # Color verde para diferenciarlo
+        bg='#27ae60', 
         fg='white',
         width=25,
         pady=10,
         cursor='hand2'
     ).pack(pady=10)
 
-    # Botón para salir
+    # Botón para volver (Cerrar Sesión)
     tk.Button(
         ventana,
-        text='Cerrar Sesión',
-        font=('Arial', 10),
-        command=ventana.destroy,
+        text='⬅ Cerrar Sesión',
+        font=('Arial', 10, 'bold'),
+        command=volver_al_inicio,   # Cambiado para que regrese al inicio
         bg='#e74c3c',
         fg='white',
-        width=15
+        width=18
     ).pack(pady=25)
 
     ventana.mainloop()

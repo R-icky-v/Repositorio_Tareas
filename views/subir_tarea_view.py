@@ -22,6 +22,36 @@ class SubirTareaView(tk.Toplevel):
         self.crear_interfaz()
 
     def crear_interfaz(self):
+        # --- NUEVA BARRA DE NAVEGACIÓN ---
+        nav_frame = tk.Frame(self, bg='#f0f0f0')
+        nav_frame.pack(fill="x", padx=10, pady=5)
+
+        # Botón Atrás
+        tk.Button(nav_frame, text="⬅ Atrás", command=self.destroy,
+                  bg='#bdc3c7', relief='flat', padx=10).pack(side="left")
+
+        # Botón Menú
+        # Botón Menú
+        def volver_a_perfiles():
+            # Si existe un padre (Panel), al destruirlo se destruye todo automáticamente
+            if self.master: 
+                self.master.destroy() 
+            else:
+                self.destroy() # Por si acaso se abrió como ventana independiente
+                
+            from views.seleccion_perfil import abrir_seleccion_perfil
+            abrir_seleccion_perfil()
+
+        tk.Button(nav_frame, text="🏠 Menú Perfiles", command=volver_a_perfiles, 
+                  bg='#a1c4fd', relief='flat', padx=10).pack(side="right")
+
+        tk.Button(nav_frame, text="🏠 Menú Perfiles", command=volver_a_perfiles,
+                  bg='#a1c4fd', relief='flat', padx=10).pack(side="right")
+
+        # --- SEPARADOR VISUAL ---
+        tk.Frame(self, height=1, bg='#cccccc').pack(fill="x", padx=10)
+
+        # --- CÓDIGO ORIGINAL (Sin alteraciones) ---
         main_frame = ttk.Frame(self, padding="20")
         main_frame.pack(fill="both", expand=True)
 

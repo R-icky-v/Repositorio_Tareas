@@ -12,6 +12,23 @@ class VerCalificacionesView(tk.Toplevel):
         self.cargar_datos()
 
     def _build_ui(self):
+        # --- NUEVA BARRA DE NAVEGACIÓN ---
+        nav_frame = tk.Frame(self, bg='#f0f0f0')
+        nav_frame.pack(fill="x", padx=10, pady=5)
+
+        tk.Button(nav_frame, text="⬅ Atrás", command=self.destroy,
+                  bg='#bdc3c7', relief='flat', padx=10).pack(side="left")
+
+        def volver_a_perfiles():
+            if self.master: self.master.destroy() 
+            else: self.destroy()
+            from views.seleccion_perfil import abrir_seleccion_perfil
+            abrir_seleccion_perfil()
+
+        tk.Button(nav_frame, text="🏠 Menú Perfiles", command=volver_a_perfiles,
+                  bg='#a1c4fd', relief='flat', padx=10).pack(side="right")
+
+        # --- CONTENIDO ORIGINAL ---
         # Frame superior para el promedio
         self.frame_top = tk.Frame(self, bg="#2c3e50", pady=20)
         self.frame_top.pack(fill="x")
@@ -26,7 +43,7 @@ class VerCalificacionesView(tk.Toplevel):
         container = tk.Frame(self, padx=20, pady=20)
         container.pack(fill="both", expand=True)
 
-        # Frame para la tabla y el scrollbar (T-05.1)
+        # Frame para la tabla y el scrollbar
         tabla_frame = tk.Frame(container)
         tabla_frame.pack(fill="both", expand=True)
 
@@ -41,24 +58,21 @@ class VerCalificacionesView(tk.Toplevel):
             yscrollcommand=scrollbar.set
         )
         
-        # Configuración de encabezados
         self.tabla.heading("materia", text="ID Curso")
         self.tabla.heading("tarea", text="Tarea")
         self.tabla.heading("nota", text="Nota")
         self.tabla.heading("comentario", text="Feedback del Docente")
 
-        # Configuración de columnas
         self.tabla.column("materia", width=100, anchor="center")
         self.tabla.column("tarea", width=150)
         self.tabla.column("nota", width=60, anchor="center")
         self.tabla.column("comentario", width=350)
 
-        # Configurar color rojo para reprobados (T-05.1)
         self.tabla.tag_configure("reprobado", foreground="red")
         
         self.tabla.pack(fill="both", expand=True)
         scrollbar.config(command=self.tabla.yview)
-
+        
     def cargar_datos(self):
         notas, promedio = CalificacionesEstudianteController.obtener_resumen_notas(self.id_estudiante)
         self.lbl_promedio.config(text=f"Promedio Actual: {promedio}")
