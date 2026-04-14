@@ -2,9 +2,12 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import tkinter as tk
+from tkinter import ttk, messagebox
 from database.sesion import iniciar_sesion
 from views.crear_tarea_view import CrearTareaView
-from views.ver_tareas_view import VerTareasView # <--- Importar
+from views.ver_tareas_view import VerTareasView 
+from views.tareas_estudiante_view import TareasEstudianteView
+from views.ver_calificaciones_view import VerCalificacionesView
 
 def abrir_seleccion_perfil():
     ventana = tk.Tk()
@@ -29,7 +32,7 @@ def abrir_seleccion_perfil():
         fg='#666666'
     ).pack(pady=5)
 
-    # ── Botones ───────────────────────────────────────────────
+    # ── Botones de Selección ──────────────────────────────────
     def entrar_como_docente():
         perfil = iniciar_sesion('docente')
         if perfil['id']:
@@ -85,17 +88,20 @@ def abrir_menu_docente(perfil):
         bg='#f0f0f0'
     ).pack(pady=20)
 
-    # --- 1. FUNCIÓN PARA CREAR TAREA (Ya la tenías) ---
+    # --- LÓGICA DE NAVEGACIÓN ---
+    def volver_al_inicio():
+        ventana.destroy()          # Cierra el menú docente
+        abrir_seleccion_perfil()   # Reabre la selección de perfil
+
+    # --- ACCIONES DEL DOCENTE ---
     def ir_a_crear_tarea():
         id_curso_prueba = "c3808b8b-dab9-47f1-9809-dcd2848849d4" 
         CrearTareaView(ventana, id_curso_prueba, perfil['id'])
 
-    # --- 2. NUEVA FUNCIÓN PARA VER TAREAS ---
     def ir_a_ver_tareas():
-        # Llamamos a la vista que creamos pasándole el ID del docente logueado
         VerTareasView(ventana, perfil['id'])
 
-    # --- BOTÓN 1: CREAR ---
+    # --- BOTÓN 1: CREAR (US-09) ---
     tk.Button(
         ventana,
         text='➕ Crear Nueva Tarea',
@@ -108,26 +114,36 @@ def abrir_menu_docente(perfil):
         command=ir_a_crear_tarea
     ).pack(pady=10)
 
-    # --- BOTÓN 2: VER (Aquí conectamos la nueva función) ---
+    # --- BOTÓN 2: VER Y CALIFICAR (US-10) ---
     tk.Button(
         ventana,
-        text='📋 Ver mis Tareas',
+        text='📋 Gestionar y Calificar',
         font=('Arial', 12),
         bg='white',
         fg='#333333',
         width=20,
         height=2,
         cursor='hand2',
-        command=ir_a_ver_tareas  # <-- Ahora este botón ya hace algo
+        command=ir_a_ver_tareas 
     ).pack(pady=10)
 
-    ventana.mainloop()
+    # Botón para volver (Cerrar Sesión)
+    tk.Button(
+        ventana,
+        text='⬅ Cerrar Sesión',
+        font=('Arial', 10, 'bold'),
+        command=volver_al_inicio,   # Cambiado para que regrese al inicio
+        bg='#e74c3c',
+        fg='white',
+        width=18
+    ).pack(pady=20)
 
+    ventana.mainloop()
 
 def abrir_menu_estudiante(perfil):
     ventana = tk.Tk()
     ventana.title('Estudiante — ' + perfil['nombre'] + ' ' + perfil['apellido'])
-    ventana.geometry('400x300')
+    ventana.geometry('400x450') 
     ventana.configure(bg='#f0f0f0')
 
     tk.Label(
@@ -137,26 +153,55 @@ def abrir_menu_estudiante(perfil):
         bg='#f0f0f0'
     ).pack(pady=30)
 
-    tk.Label(
-        ventana,
-        text='Perfil: Estudiante',
-        font=('Arial', 11),
-        bg='#f0f0f0',
-        fg='#27ae60'
-    ).pack()
+    # --- LÓGICA DE NAVEGACIÓN ---
+    def volver_al_inicio():
+        ventana.destroy()          # Cierra el menú estudiante
+        abrir_seleccion_perfil()   # Reabre la selección de perfil
 
-    # Aquí tus compañeros agregarán los botones del menú estudiante
-    tk.Label(
+    def ejecutar_ver_tareas():
+        TareasEstudianteView(ventana, perfil['id'])
+
+    def ejecutar_ver_calificaciones():
+        VerCalificacionesView(ventana, perfil['id'])
+
+    # --- BOTÓN 1: TAREAS (US-03) ---
+    tk.Button(
         ventana,
-        text='(Aqui iran las opciones del estudiante)',
-        font=('Arial', 10),
-        bg='#f0f0f0',
-        fg='#999999'
-    ).pack(pady=20)
+        text='📋 Ver Tareas Pendientes',
+        font=('Arial', 11, 'bold'),
+        command=ejecutar_ver_tareas,
+        bg='#3498db',
+        fg='white',
+        width=25,
+        pady=10,
+        cursor='hand2'
+    ).pack(pady=10)
+
+    # --- BOTÓN 2: CALIFICACIONES (US-05) ---
+    tk.Button(
+        ventana,
+        text='⭐ Mis Calificaciones',
+        font=('Arial', 11, 'bold'),
+        command=ejecutar_ver_calificaciones,
+        bg='#27ae60', 
+        fg='white',
+        width=25,
+        pady=10,
+        cursor='hand2'
+    ).pack(pady=10)
+
+    # Botón para volver (Cerrar Sesión)
+    tk.Button(
+        ventana,
+        text='⬅ Cerrar Sesión',
+        font=('Arial', 10, 'bold'),
+        command=volver_al_inicio,   # Cambiado para que regrese al inicio
+        bg='#e74c3c',
+        fg='white',
+        width=18
+    ).pack(pady=25)
 
     ventana.mainloop()
 
-
 if __name__ == '__main__':
     abrir_seleccion_perfil()
-    
