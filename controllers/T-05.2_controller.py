@@ -2,7 +2,7 @@ from database.conexion import get_conexion
 
 def obtener_calificaciones_estudiante(id_estudiante, id_usuario_actual):
     try:
-        # 🔐 1. Validar acceso (solo el propio estudiante)
+        #  1. Validar acceso (solo el propio estudiante)
         if id_estudiante != id_usuario_actual:
             return {
                 "ok": False,
@@ -12,7 +12,7 @@ def obtener_calificaciones_estudiante(id_estudiante, id_usuario_actual):
         conn = get_conexion()
         cursor = conn.cursor()
 
-        # 📊 2. Obtener calificaciones (cuando exista la tabla)
+        #  2. Obtener calificaciones (cuando exista la tabla)
         query = '''
             SELECT c.calificacion, c.estado
             FROM calificaciones c
@@ -31,7 +31,7 @@ def obtener_calificaciones_estudiante(id_estudiante, id_usuario_actual):
             fila[0] for fila in filas if fila[1] == 'publicada'
         ]
 
-        # 📈 4. Calcular promedio
+        #  4. Calcular promedio
         if len(calificaciones) > 0:
             promedio = sum(calificaciones) / len(calificaciones)
         else:
