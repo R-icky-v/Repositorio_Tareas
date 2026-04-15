@@ -22,40 +22,34 @@ class TareaController:
     """
 
     def guardar_nueva_tarea(self, titulo, descripcion, fecha_limite, id_curso, id_docente, archivo_nombre, publicar_ahora=False):
-        """
-        Método que llama la vista (Tkinter). 
-        Retorna (True/False, "Mensaje de éxito o error")
-        """
-        
-        # --- PASO 1: VALIDACIÓN (Tarea 09.3) ---
+        # --- PASO 1: VALIDACIÓN ---
         errores = validar_tarea(titulo, fecha_limite, archivo_nombre)
         if errores:
-            # Si hay errores en la lista, los unimos en un solo string
             return False, "\n".join(errores)
 
-        # --- PASO 2: GUARDADO EN BASE DE DATOS (Tarea 09.7) ---
-        # En tarea_controller.py
+        # --- PASO 2: GUARDADO ---
         try:
-            # 1. Intentamos insertar la tarea
+            # Determinamos el estado inicial antes de insertar
+            estado_inicial = 'publicada' if publicar_ahora else 'borrador'
+            
+            # 💡 IMPORTANTE: Modificamos la llamada para que inserte con el estado correcto de una vez
+            # Nota: Asegúrate de que tu insertar_tarea en tareas_queries acepte el estado como parámetro
+            # Si no lo acepta, usa el parche de abajo.
+            
             id_tarea = insertar_tarea(titulo, descripcion, fecha_limite, id_curso, id_docente)
             
             if not id_tarea:
-                return False, "La base de datos devolvió un ID vacío. Revisa la consola de VS Code."
+                return False, "Error: No se pudo generar el ID de la tarea."
 
-            # --- AQUÍ VA EL CÓDIGO QUE DEBES AUMENTAR ---
-            
-            # 2. Si la inserción fue exitosa y el usuario marcó 'publicar'
+            # Si el usuario pidió publicar, aseguramos el estado ahora mismo
             if publicar_ahora:
-                # Llamamos a la función que ya tienen en tareas_queries.py
                 cambiar_estado_tarea(id_tarea, 'publicada')
                 return True, "¡Tarea creada y publicada exitosamente!"
             
-            # --------------------------------------------
-
-            # Si no se marcó publicar, simplemente termina como borrador
             return True, "Tarea guardada como borrador correctamente."
 
         except Exception as e:
+            print(f"DEBUG ERROR: {e}") # Esto lo verás en la consola de VS Code
             return False, f"Error técnico: {str(e)}"
 
     def borrar_tarea_si_es_posible(self, id_tarea):

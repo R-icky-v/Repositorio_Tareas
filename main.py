@@ -13,7 +13,8 @@ if __name__ == '__main__':
     crear_tabla_entregas()
     
     # 2. Inyectar los datos 100% seguros
-    #inyectar_tarea_y_matricula()
+    #
+    inyectar_tarea_y_matricula()
     
     # 3. Iniciar App
     abrir_seleccion_perfil()

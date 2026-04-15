@@ -24,3 +24,6 @@ print(f"✅ Tabla tareas — {len(tareas)} registros: {tareas}")
 
 cursor.close()
 conn.close()
+
+
+#aaaa

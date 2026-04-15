@@ -105,8 +105,11 @@ if __name__ == "__main__":
     root = tk.Tk()
     root.withdraw()
     
-    ID_CURSO_VALIDO = "c3808b8b-dab9-47f1-9809-dcd2848849d4" 
-    ID_DOCENTE_VALIDO = "5820f721-bb24-4605-9df0-c8cc6a8e54cb"
+    # IMPORTANTE: Usar los IDs de la sesión para que coincidan con el estudiante
+    from database.sesion import IDS 
+    
+    ID_CURSO_VALIDO = IDS['curso'] 
+    ID_DOCENTE_VALIDO = IDS['docente']
     
     app = CrearTareaView(root, ID_CURSO_VALIDO, ID_DOCENTE_VALIDO)
     root.mainloop()

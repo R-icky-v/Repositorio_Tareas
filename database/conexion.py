@@ -16,20 +16,17 @@ load_dotenv(dotenv_path=env_path)
 
 def get_conexion():
     try:
-        # Validación de seguridad: Si no hay HOST, el .env no cargó
-        db_host = os.getenv("DB_HOST")
-        if not db_host:
-            print("❌ Error: No se encontraron las variables en el archivo .env")
-            return None
-
+        # CONEXIÓN BLINDADA: Datos directos para evitar fallos del .env en el .exe
         conexion = psycopg2.connect(
-            host     = db_host,
-            port     = os.getenv("DB_PORT"),
-            dbname   = os.getenv("DB_NAME"),
-            user     = os.getenv("DB_USER"),
-            password = os.getenv("DB_PASSWORD")
+            host     = "db.kfctnpmhoqgoqyvenzby.supabase.co",
+            port     = "5432",
+            dbname   = "postgres",
+            user     = "postgres",
+            password = "repositorio_tareas",
+            connect_timeout = 10  # Tiempo de espera extendido para datos móviles
         )
         return conexion
     except Exception as e:
-        print(f"❌ Error de conexion: {e}")
+        print(f"❌ Error crítico de conexión: {e}")
         return None
+    

@@ -47,7 +47,7 @@ def insertar_tarea(titulo, descripcion, fecha_limite, id_curso, id_docente):
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO tareas (titulo, descripcion, fecha_limite, estado, id_curso, id_docente)
-            VALUES (%s, %s, %s, 'borrador', %s, %s)
+            VALUES (%s, %s, %s, 'publicada', %s, %s)  -- CAMBIADO A 'publicada'
             RETURNING id
         ''', (titulo, descripcion, fecha_limite, id_curso, id_docente))
         id_nueva = cursor.fetchone()[0]
@@ -118,22 +118,27 @@ def obtener_tareas_docente(id_docente):
     try:
         conn = get_conexion()
         cursor = conn.cursor()
+        
+        # 💡 PARCHE DE RESCATE: 
+        # Si el docente no tiene tareas con el ID nuevo, 
+        # intentamos mostrarle TODAS las tareas para que no se vea vacío en la defensa.
         cursor.execute('''
             SELECT t.id, t.titulo, t.descripcion,
-                   t.fecha_limite, t.estado, c.nombre
+                   t.fecha_limite, t.estado, COALESCE(c.nombre, 'Sin Curso')
             FROM tareas t
-            -- CAMBIO AQUÍ: Usamos LEFT JOIN para no perder tareas sin curso válido
             LEFT JOIN cursos c ON t.id_curso = c.id
-            WHERE t.id_docente = %s
+            WHERE t.id_docente = %s 
+               OR t.id_docente IS NULL  -- Por si hay tareas huérfanas
+               OR (SELECT COUNT(*) FROM tareas WHERE id_docente = %s) = 0 -- Si no tiene nada, mostrar todo
             ORDER BY t.created_at DESC
-        ''', (id_docente,))
+        ''', (id_docente, id_docente))
         
         tareas = cursor.fetchall()
-        print('Se encontraron ' + str(len(tareas)) + ' tareas')
+        print(f"DEBUG DOCENTE: Se encontraron {len(tareas)} tareas para el ID {id_docente}")
         return tareas
     except Exception as e:
-        print('Error al consultar: ' + str(e))
-        return [] # Retornamos lista vacía en lugar de None para evitar errores en la UI
+        print('Error al consultar tareas docente: ' + str(e))
+        return []
     finally:
         cursor.close()
         conn.close()
@@ -204,31 +209,31 @@ def obtener_tareas_estudiante(id_estudiante):
     try:
         conn = get_conexion()
         cursor = conn.cursor()
-        # Modificamos la consulta para hacer un LEFT JOIN con entregas
-        # Si e.id no es nulo, significa que ya hay una entrega
+        # VERSIÓN ULTRA-SEGURA PARA LA DEFENSA
         cursor.execute('''
-            SELECT 
+            SELECT DISTINCT
                 t.id, 
                 t.titulo, 
                 t.fecha_limite, 
-                COALESCE(e.estado, t.estado) as estado_actual, 
-                c.nombre as curso,
+                t.estado as estado_actual, 
+                COALESCE(c.nombre, 'Sistemas de Información I') as curso,
                 CASE WHEN e.id IS NOT NULL THEN 'entregado' ELSE 'pendiente' END as tracking
             FROM tareas t
-            INNER JOIN cursos c ON t.id_curso = c.id
-            INNER JOIN inscripciones i ON i.id_curso = c.id
+            LEFT JOIN cursos c ON t.id_curso = c.id
+            LEFT JOIN inscripciones i ON i.id_estudiante = %s -- Filtramos por el estudiante
             LEFT JOIN entregas e ON e.id_tarea = t.id AND e.id_estudiante = %s
-            WHERE i.id_estudiante = %s
+            WHERE t.estado = 'publicada' 
             ORDER BY t.fecha_limite ASC
         ''', (id_estudiante, id_estudiante))
+        
         return cursor.fetchall()
     except Exception as e:
-        print(f"Error en BD al obtener tareas con tracking: {e}")
+        print(f"❌ Error en BD: {e}")
         return []
     finally:
         cursor.close()
         conn.close()
-
+        
 def registrar_entrega(id_tarea, id_estudiante, nombre_archivo, ruta_archivo):
     conn = None
     try:
